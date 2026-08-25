@@ -1,0 +1,9 @@
+{
+  "protocol": "dodecagon/root-approval/1",
+  "approvalId": "00000000-0000-4000-8000-000000000000",
+  "repository": "Geo222222/dodecagon-ring",
+  "commitSha": "0000000000000000000000000000000000000000",
+  "operation": "deploy:ring-m2",
+  "issuedAt": "2026-08-25T17:00:00.000Z",
+  "expiresAt": "2026-08-25T17:15:00.000Z"
+}

@@ -43,6 +43,16 @@ export interface GateResponse<T = unknown> {
   };
 }
 
+export interface RootApprovalManifest {
+  protocol: "dodecagon/root-approval/1";
+  approvalId: string;
+  repository: string;
+  commitSha: string;
+  operation: string;
+  issuedAt: string;
+  expiresAt: string;
+}
+
 export function isGateId(value: unknown): value is GateId {
   return typeof value === "string" && (GATE_IDS as readonly string[]).includes(value);
 }
@@ -64,6 +74,54 @@ export function validateEnvelope(value: unknown): DodecagonEnvelope {
   if (typeof item["signature"] !== "string" || item["signature"].length < 8) throw new TypeError("Invalid signature");
 
   return item as unknown as DodecagonEnvelope;
+}
+
+export function validateRootApprovalManifest(value: unknown): RootApprovalManifest {
+  if (typeof value !== "object" || value === null) throw new TypeError("Root approval manifest must be an object");
+  const item = value as Record<string, unknown>;
+
+  if (item["protocol"] !== "dodecagon/root-approval/1") throw new TypeError("Invalid root approval protocol");
+  if (typeof item["approvalId"] !== "string" || !isUuid(item["approvalId"])) throw new TypeError("Invalid approvalId");
+  if (typeof item["repository"] !== "string" || item["repository"].length < 3) throw new TypeError("Invalid repository");
+  if (typeof item["commitSha"] !== "string" || !/^[0-9a-f]{40,64}$/i.test(item["commitSha"])) throw new TypeError("Invalid commitSha");
+  if (typeof item["operation"] !== "string" || item["operation"].trim().length < 3) throw new TypeError("Invalid operation");
+  if (typeof item["issuedAt"] !== "string" || Number.isNaN(Date.parse(item["issuedAt"]))) throw new TypeError("Invalid issuedAt");
+  if (typeof item["expiresAt"] !== "string" || Number.isNaN(Date.parse(item["expiresAt"]))) throw new TypeError("Invalid expiresAt");
+
+  return item as unknown as RootApprovalManifest;
+}
+
+export function rootApprovalPayload(manifest: RootApprovalManifest): string {
+  return canonicalJson(manifest);
+}
+
+export function verifyRootApprovalSignature(
+  manifest: RootApprovalManifest,
+  signatureBase64: string,
+  publicKeyPem: string,
+): boolean {
+  return verify(
+    null,
+    Buffer.from(rootApprovalPayload(manifest), "utf8"),
+    createPublicKey(publicKeyPem),
+    Buffer.from(signatureBase64, "base64"),
+  );
+}
+
+export function isRootApprovalCurrentlyValid(
+  manifest: RootApprovalManifest,
+  nowMs = Date.now(),
+  maxLifetimeMs = 60 * 60 * 1000,
+  futureSkewMs = 60 * 1000,
+): boolean {
+  const issuedAt = Date.parse(manifest.issuedAt);
+  const expiresAt = Date.parse(manifest.expiresAt);
+  return (
+    expiresAt > issuedAt &&
+    expiresAt - issuedAt <= maxLifetimeMs &&
+    issuedAt <= nowMs + futureSkewMs &&
+    expiresAt > nowMs
+  );
 }
 
 export function signingPayload(envelope: Omit<DodecagonEnvelope, "signature"> | DodecagonEnvelope): string {
@@ -119,4 +177,8 @@ function isIntent(value: unknown): value is DodecagonIntent {
 function isCallerId(value: unknown): value is CallerId {
   if (value === "shiloh" || value === "root-authority" || isGateId(value)) return true;
   return typeof value === "string" && value.startsWith("external:") && value.length > 9;
+}
+
+function isUuid(value: string): boolean {
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(value);
 }

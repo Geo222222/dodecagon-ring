@@ -1,0 +1,8 @@
+{
+  "protocol": "dodecagon/1",
+  "gateId": "asher",
+  "domain": "provision",
+  "wall": "west",
+  "status": "reserved",
+  "sovereign": true
+}

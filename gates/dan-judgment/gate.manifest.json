@@ -1,0 +1,8 @@
+{
+  "protocol": "dodecagon/1",
+  "gateId": "dan",
+  "domain": "judgment",
+  "wall": "east",
+  "status": "reserved",
+  "sovereign": true
+}

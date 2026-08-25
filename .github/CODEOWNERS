@@ -1,0 +1,6 @@
+# Root-level governance surfaces require explicit owner review.
+* @Geo222222
+/gates/ @Geo222222
+/engines/shiloh/ @Geo222222
+/.github/workflows/ @Geo222222
+/scripts/verify-root-approval.mjs @Geo222222

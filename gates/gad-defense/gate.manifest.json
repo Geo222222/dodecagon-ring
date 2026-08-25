@@ -1,0 +1,8 @@
+{
+  "protocol": "dodecagon/1",
+  "gateId": "gad",
+  "domain": "defense",
+  "wall": "west",
+  "status": "reserved",
+  "sovereign": true
+}

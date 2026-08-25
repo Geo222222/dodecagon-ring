@@ -1,0 +1,44 @@
+name: Root Authority Deployment Gate
+
+on:
+  workflow_dispatch:
+    inputs:
+      commit_sha:
+        description: Exact commit SHA being authorized
+        required: true
+        type: string
+      operation:
+        description: Consequential operation being authorized
+        required: true
+        type: string
+      signature_b64:
+        description: Base64 Ed25519 signature over the canonical approval payload
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+jobs:
+  root-approval:
+    environment: root-authority
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.commit_sha }}
+      - name: Verify Root Authority cryptographic callback
+        env:
+          DODECAGON_REPOSITORY: ${{ github.repository }}
+          DODECAGON_REF: ${{ github.ref }}
+          DODECAGON_SHA: ${{ inputs.commit_sha }}
+          DODECAGON_OPERATION: ${{ inputs.operation }}
+          DODECAGON_ROOT_SIGNATURE_B64: ${{ inputs.signature_b64 }}
+          ROOT_AUTHORITY_PUBLIC_KEY_PEM: ${{ secrets.ROOT_AUTHORITY_PUBLIC_KEY_PEM }}
+        run: node scripts/verify-root-approval.mjs
+      - name: Verify authorized commit is checked out
+        run: test "$(git rev-parse HEAD)" = "${{ inputs.commit_sha }}"
+      - name: Root-authorized deployment boundary
+        run: |
+          echo "Root Authority verified."
+          echo "No deployment target is wired in Phase 1; future deployment steps must remain after this gate."

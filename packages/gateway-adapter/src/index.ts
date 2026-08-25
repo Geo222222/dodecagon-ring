@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import type {
   CallerId,
   DodecagonEnvelope,
@@ -16,13 +17,35 @@ export interface GateCapability {
   handler: CapabilityHandler;
 }
 
+export interface GatewayAuditEvent {
+  eventId: string;
+  occurredAt: string;
+  eventType: "gateway.accepted";
+  gate: GateId;
+  requestId: string;
+  caller: CallerId;
+  targetGate: GateId;
+  intent: DodecagonIntent;
+  capability: string;
+}
+
+export interface GatewaySecurity {
+  maxClockSkewMs: number;
+  now?: () => number;
+  consumeNonce: (envelope: DodecagonEnvelope, expiresAt: string) => Promise<boolean>;
+  recordAudit: (event: GatewayAuditEvent) => Promise<void>;
+}
+
 export interface GatewayAdapterConfig {
   gateId: GateId;
   capabilities: Readonly<Record<string, GateCapability>>;
   resolveCallerPublicKey: (caller: CallerId) => string | undefined;
+  security: GatewaySecurity;
 }
 
 export function createGatewayAdapter(config: GatewayAdapterConfig) {
+  const maxClockSkewMs = validateClockSkew(config.security.maxClockSkewMs);
+
   return async (input: unknown): Promise<GateResponse> => {
     let envelope: DodecagonEnvelope;
     try {
@@ -38,6 +61,17 @@ export function createGatewayAdapter(config: GatewayAdapterConfig) {
     const publicKey = config.resolveCallerPublicKey(envelope.caller);
     if (publicKey === undefined || !verifyEnvelopeSignature(envelope, publicKey)) {
       return failure(config.gateId, envelope.requestId, "UNTRUSTED_CALLER", "Caller signature is not trusted.");
+    }
+
+    const nowMs = config.security.now?.() ?? Date.now();
+    const requestMs = Date.parse(envelope.timestamp);
+    if (Math.abs(nowMs - requestMs) > maxClockSkewMs) {
+      return failure(
+        config.gateId,
+        envelope.requestId,
+        "REQUEST_OUTSIDE_TIME_WINDOW",
+        "Signed request timestamp is outside the permitted gateway tolerance.",
+      );
     }
 
     const ringDecision = authorizeEnvelope(envelope);
@@ -68,6 +102,37 @@ export function createGatewayAdapter(config: GatewayAdapterConfig) {
       );
     }
 
+    const expiresAt = new Date(Math.max(nowMs, requestMs) + maxClockSkewMs).toISOString();
+    try {
+      const accepted = await config.security.consumeNonce(envelope, expiresAt);
+      if (!accepted) {
+        return failure(
+          config.gateId,
+          envelope.requestId,
+          "REPLAY_DETECTED",
+          "This caller nonce has already crossed the Ring boundary.",
+        );
+      }
+    } catch (error) {
+      return failure(config.gateId, envelope.requestId, "SECURITY_GUARD_FAILURE", errorMessage(error));
+    }
+
+    try {
+      await config.security.recordAudit({
+        eventId: randomUUID(),
+        occurredAt: new Date(nowMs).toISOString(),
+        eventType: "gateway.accepted",
+        gate: config.gateId,
+        requestId: envelope.requestId,
+        caller: envelope.caller,
+        targetGate: envelope.targetGate,
+        intent: envelope.intent,
+        capability: envelope.capability,
+      });
+    } catch (error) {
+      return failure(config.gateId, envelope.requestId, "AUDIT_UNAVAILABLE", errorMessage(error));
+    }
+
     try {
       const data = await capability.handler(envelope);
       return { ok: true, gate: config.gateId, requestId: envelope.requestId, data };
@@ -75,6 +140,13 @@ export function createGatewayAdapter(config: GatewayAdapterConfig) {
       return failure(config.gateId, envelope.requestId, "HANDLER_FAILURE", errorMessage(error));
     }
   };
+}
+
+function validateClockSkew(value: number): number {
+  if (!Number.isFinite(value) || value < 1_000 || value > 300_000) {
+    throw new RangeError("Gateway maxClockSkewMs must be between 1000 and 300000 milliseconds.");
+  }
+  return Math.floor(value);
 }
 
 function failure(gate: GateId, requestId: string, code: string, message: string): GateResponse {

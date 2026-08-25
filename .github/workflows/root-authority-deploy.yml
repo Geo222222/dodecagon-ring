@@ -3,6 +3,10 @@ name: Root Authority Deployment Gate
 on:
   workflow_dispatch:
     inputs:
+      approval_id:
+        description: One-use Root Authority approval UUID
+        required: true
+        type: string
       commit_sha:
         description: Exact commit SHA being authorized
         required: true
@@ -11,8 +15,16 @@ on:
         description: Consequential operation being authorized
         required: true
         type: string
+      issued_at:
+        description: Approval issuance timestamp from offline signer
+        required: true
+        type: string
+      expires_at:
+        description: Approval expiration timestamp from offline signer
+        required: true
+        type: string
       signature_b64:
-        description: Base64 Ed25519 signature over the canonical approval payload
+        description: Base64 Ed25519 signature over the canonical approval manifest
         required: true
         type: string
 
@@ -24,21 +36,45 @@ jobs:
     environment: root-authority
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout trusted verifier from protected main
+        uses: actions/checkout@v4
         with:
-          ref: ${{ inputs.commit_sha }}
-      - name: Verify Root Authority cryptographic callback
+          ref: main
+          path: trusted-root
+          persist-credentials: false
+      - name: Verify offline Root Authority signature and time window
         env:
+          DODECAGON_APPROVAL_ID: ${{ inputs.approval_id }}
           DODECAGON_REPOSITORY: ${{ github.repository }}
-          DODECAGON_REF: ${{ github.ref }}
           DODECAGON_SHA: ${{ inputs.commit_sha }}
           DODECAGON_OPERATION: ${{ inputs.operation }}
+          DODECAGON_ISSUED_AT: ${{ inputs.issued_at }}
+          DODECAGON_EXPIRES_AT: ${{ inputs.expires_at }}
           DODECAGON_ROOT_SIGNATURE_B64: ${{ inputs.signature_b64 }}
           ROOT_AUTHORITY_PUBLIC_KEY_PEM: ${{ secrets.ROOT_AUTHORITY_PUBLIC_KEY_PEM }}
-        run: node scripts/verify-root-approval.mjs
+        run: node trusted-root/scripts/verify-root-approval.mjs
+      - name: Checkout authorized candidate without executing candidate code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.commit_sha }}
+          path: candidate
+          persist-credentials: false
       - name: Verify authorized commit is checked out
-        run: test "$(git rev-parse HEAD)" = "${{ inputs.commit_sha }}"
+        run: test "$(git -C candidate rev-parse HEAD)" = "${{ inputs.commit_sha }}"
+      - name: Atomically consume one-use approval in Reuben using trusted transport code
+        env:
+          DODECAGON_APPROVAL_ID: ${{ inputs.approval_id }}
+          DODECAGON_REPOSITORY: ${{ github.repository }}
+          DODECAGON_SHA: ${{ inputs.commit_sha }}
+          DODECAGON_OPERATION: ${{ inputs.operation }}
+          DODECAGON_ISSUED_AT: ${{ inputs.issued_at }}
+          DODECAGON_EXPIRES_AT: ${{ inputs.expires_at }}
+          DODECAGON_ROOT_SIGNATURE_B64: ${{ inputs.signature_b64 }}
+          DODECAGON_WORKFLOW_PRIVATE_KEY_PEM: ${{ secrets.DODECAGON_WORKFLOW_PRIVATE_KEY_PEM }}
+          REUBEN_BASE_URL: ${{ secrets.REUBEN_BASE_URL }}
+        run: node trusted-root/scripts/root-authority/consume-root-approval.mjs
       - name: Root-authorized deployment boundary
+        working-directory: candidate
         run: |
-          echo "Root Authority verified."
-          echo "No deployment target is wired in Phase 1; future deployment steps must remain after this gate."
+          echo "Root Authority signature verified and one-use approval consumed."
+          echo "No production deployment target is wired in M2; future deployment steps must remain after this gate."

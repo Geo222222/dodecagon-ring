@@ -67,7 +67,8 @@ export function validateEnvelope(value: unknown): DodecagonEnvelope {
 }
 
 export function signingPayload(envelope: Omit<DodecagonEnvelope, "signature"> | DodecagonEnvelope): string {
-  const { signature: _signature, ...unsigned } = envelope as DodecagonEnvelope;
+  const unsigned: Record<string, unknown> = { ...envelope };
+  delete unsigned["signature"];
   return canonicalJson(unsigned);
 }
 

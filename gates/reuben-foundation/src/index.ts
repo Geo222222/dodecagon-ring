@@ -16,12 +16,12 @@ startGateServer({
     "foundation.health.read": {
       intents: ["read"],
       callers: ["shiloh", "judah", "root-authority"],
-      handler: async () => ({ status: "ready", sovereign: true }),
+      handler: () => ({ status: "ready", sovereign: true }),
     },
     "foundation.logs.read": {
       intents: ["read"],
       callers: ["shiloh", "judah", "root-authority"],
-      handler: async () => ({ entries: processLog }),
+      handler: () => ({ entries: processLog }),
     },
   },
 });

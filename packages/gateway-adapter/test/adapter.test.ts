@@ -32,12 +32,12 @@ describe("Gateway adapter", () => {
       "foundation.logs.read": {
         intents: ["read"],
         callers: ["shiloh"],
-        handler: async () => ({ entries: [] }),
+        handler: () => ({ entries: [] }),
       },
       "foundation.state.execute": {
         intents: ["execute"],
         callers: ["root-authority"],
-        handler: async () => ({ changed: true }),
+        handler: () => ({ changed: true }),
       },
     },
   });

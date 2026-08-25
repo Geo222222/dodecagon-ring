@@ -16,17 +16,18 @@ startGateServer({
     "capital.framework.read": {
       intents: ["read"],
       callers: ["shiloh", "judah", "root-authority"],
-      handler: () => capitalFramework,
+      handler: () => Promise.resolve(capitalFramework),
     },
     "capital.scenario.propose": {
       intents: ["propose"],
       callers: ["shiloh", "judah", "root-authority"],
-      handler: (envelope) => ({
-        scenarioId: envelope.requestId,
-        authoritative: false,
-        executionEnabled: false,
-        input: envelope.body,
-      }),
+      handler: (envelope) =>
+        Promise.resolve({
+          scenarioId: envelope.requestId,
+          authoritative: false,
+          executionEnabled: false,
+          input: envelope.body,
+        }),
     },
   },
 });

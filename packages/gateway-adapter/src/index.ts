@@ -8,7 +8,7 @@ import type {
 import { validateEnvelope, verifyEnvelopeSignature } from "@dodecagon/protocol";
 import { authorizeEnvelope } from "@dodecagon/ring-core";
 
-export type CapabilityHandler = (envelope: DodecagonEnvelope) => unknown | Promise<unknown>;
+export type CapabilityHandler = (envelope: DodecagonEnvelope) => Promise<unknown>;
 
 export interface GateCapability {
   intents: readonly DodecagonIntent[];

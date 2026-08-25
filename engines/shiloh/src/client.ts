@@ -38,5 +38,5 @@ export async function callGate(input: {
     throw new Error(`Gate call failed with HTTP ${response.status}: ${await response.text()}`);
   }
 
-  return response.json() as Promise<unknown>;
+  return response.json();
 }

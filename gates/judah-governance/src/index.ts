@@ -14,17 +14,18 @@ startGateServer({
     "governance.policy.read": {
       intents: ["read"],
       callers: ["shiloh", "reuben", "joseph", "root-authority"],
-      handler: () => policy,
+      handler: () => Promise.resolve(policy),
     },
     "governance.proposal.create": {
       intents: ["propose"],
       callers: ["shiloh", "reuben", "joseph", "root-authority"],
-      handler: (envelope) => ({
-        proposalId: envelope.requestId,
-        authoritative: false,
-        receivedAt: new Date().toISOString(),
-        proposal: envelope.body,
-      }),
+      handler: (envelope) =>
+        Promise.resolve({
+          proposalId: envelope.requestId,
+          authoritative: false,
+          receivedAt: new Date().toISOString(),
+          proposal: envelope.body,
+        }),
     },
   },
 });

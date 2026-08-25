@@ -46,7 +46,7 @@ startGateServer({
     "foundation.audit.verify": {
       intents: ["read"],
       callers: ["shiloh", "judah", "root-authority"],
-      handler: async () => store.verifyChain(),
+      handler: () => store.verifyChain(),
     },
     "foundation.nonce.consume": {
       intents: ["execute"],

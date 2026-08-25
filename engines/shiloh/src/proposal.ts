@@ -74,7 +74,7 @@ export function buildProposal(input: {
   };
 }
 
-export async function recordProposal(input: {
+export function recordProposal(input: {
   reubenBaseUrl: string;
   privateKeyPem: string;
   proposal: ShilohProposal;

@@ -1,12 +1,24 @@
-import type { CallerId, DodecagonEnvelope, GateId, GateResponse } from "@dodecagon/protocol";
+import type {
+  CallerId,
+  DodecagonEnvelope,
+  DodecagonIntent,
+  GateId,
+  GateResponse,
+} from "@dodecagon/protocol";
 import { validateEnvelope, verifyEnvelopeSignature } from "@dodecagon/protocol";
 import { authorizeEnvelope } from "@dodecagon/ring-core";
 
 export type CapabilityHandler = (envelope: DodecagonEnvelope) => Promise<unknown>;
 
+export interface GateCapability {
+  intents: readonly DodecagonIntent[];
+  callers: readonly CallerId[];
+  handler: CapabilityHandler;
+}
+
 export interface GatewayAdapterConfig {
   gateId: GateId;
-  capabilities: Readonly<Record<string, CapabilityHandler>>;
+  capabilities: Readonly<Record<string, GateCapability>>;
   resolveCallerPublicKey: (caller: CallerId) => string | undefined;
 }
 
@@ -33,13 +45,31 @@ export function createGatewayAdapter(config: GatewayAdapterConfig) {
       return failure(config.gateId, envelope.requestId, ringDecision.code, ringDecision.reason);
     }
 
-    const handler = config.capabilities[envelope.capability];
-    if (handler === undefined) {
+    const capability = config.capabilities[envelope.capability];
+    if (capability === undefined) {
       return failure(config.gateId, envelope.requestId, "UNKNOWN_CAPABILITY", "Target Gate does not expose this capability.");
     }
 
+    if (!capability.intents.includes(envelope.intent)) {
+      return failure(
+        config.gateId,
+        envelope.requestId,
+        "INTENT_CAPABILITY_MISMATCH",
+        "Declared request intent is not valid for this capability.",
+      );
+    }
+
+    if (!capability.callers.includes(envelope.caller)) {
+      return failure(
+        config.gateId,
+        envelope.requestId,
+        "CALLER_NOT_AUTHORIZED",
+        "Authenticated caller is not authorized for this capability.",
+      );
+    }
+
     try {
-      const data = await handler(envelope);
+      const data = await capability.handler(envelope);
       return { ok: true, gate: config.gateId, requestId: envelope.requestId, data };
     } catch (error) {
       return failure(config.gateId, envelope.requestId, "HANDLER_FAILURE", errorMessage(error));

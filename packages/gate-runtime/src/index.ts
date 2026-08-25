@@ -1,11 +1,14 @@
-import { createServer } from "node:http";
+import { createServer, type IncomingMessage } from "node:http";
 import type { CallerId, GateId } from "@dodecagon/protocol";
-import { createGatewayAdapter, type CapabilityHandler } from "@dodecagon/gateway-adapter";
+import {
+  createGatewayAdapter,
+  type GateCapability,
+} from "@dodecagon/gateway-adapter";
 
 export interface GateServerConfig {
   gateId: GateId;
   port: number;
-  capabilities: Readonly<Record<string, CapabilityHandler>>;
+  capabilities: Readonly<Record<string, GateCapability>>;
 }
 
 export function startGateServer(config: GateServerConfig): void {
@@ -53,12 +56,12 @@ function parseTrustMap(raw: string): Partial<Record<CallerId, string>> {
   return parsed as Partial<Record<CallerId, string>>;
 }
 
-async function readJson(request: NodeJS.ReadableStream): Promise<unknown> {
+async function readJson(request: IncomingMessage): Promise<unknown> {
   const chunks: Buffer[] = [];
   let bytes = 0;
 
   for await (const chunk of request) {
-    const buffer = Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk as Uint8Array);
+    const buffer = typeof chunk === "string" ? Buffer.from(chunk) : Buffer.from(chunk);
     bytes += buffer.byteLength;
     if (bytes > 1_048_576) throw new Error("REQUEST_TOO_LARGE");
     chunks.push(buffer);

@@ -94,7 +94,14 @@ export function verifyEnvelopeSignature(envelope: DodecagonEnvelope, publicKeyPe
 }
 
 export function canonicalJson(value: unknown): string {
-  if (value === null || typeof value !== "object") return JSON.stringify(value);
+  if (value === undefined) throw new TypeError("Undefined values are not allowed in signed payloads");
+
+  if (value === null || typeof value !== "object") {
+    const encoded = JSON.stringify(value);
+    if (encoded === undefined) throw new TypeError("Value cannot be represented in canonical JSON");
+    return encoded;
+  }
+
   if (Array.isArray(value)) return `[${value.map(canonicalJson).join(",")}]`;
 
   const record = value as Record<string, unknown>;

@@ -13,7 +13,15 @@ startGateServer({
   gateId: "reuben",
   port: Number(process.env["PORT"] ?? 4101),
   capabilities: {
-    "foundation.health.read": async () => ({ status: "ready", sovereign: true }),
-    "foundation.logs.read": async () => ({ entries: processLog }),
+    "foundation.health.read": {
+      intents: ["read"],
+      callers: ["shiloh", "judah", "root-authority"],
+      handler: async () => ({ status: "ready", sovereign: true }),
+    },
+    "foundation.logs.read": {
+      intents: ["read"],
+      callers: ["shiloh", "judah", "root-authority"],
+      handler: async () => ({ entries: processLog }),
+    },
   },
 });

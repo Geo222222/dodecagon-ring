@@ -13,12 +13,20 @@ startGateServer({
   gateId: "joseph",
   port: Number(process.env["PORT"] ?? 4201),
   capabilities: {
-    "capital.framework.read": async () => capitalFramework,
-    "capital.scenario.propose": async (envelope) => ({
-      scenarioId: envelope.requestId,
-      authoritative: false,
-      executionEnabled: false,
-      input: envelope.body,
-    }),
+    "capital.framework.read": {
+      intents: ["read"],
+      callers: ["shiloh", "judah", "root-authority"],
+      handler: async () => capitalFramework,
+    },
+    "capital.scenario.propose": {
+      intents: ["propose"],
+      callers: ["shiloh", "judah", "root-authority"],
+      handler: async (envelope) => ({
+        scenarioId: envelope.requestId,
+        authoritative: false,
+        executionEnabled: false,
+        input: envelope.body,
+      }),
+    },
   },
 });

@@ -1,0 +1,8 @@
+{
+  "protocol": "dodecagon/1",
+  "gateId": "issachar",
+  "domain": "intelligence",
+  "wall": "south",
+  "status": "reserved",
+  "sovereign": true
+}

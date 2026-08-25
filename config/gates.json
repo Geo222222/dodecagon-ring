@@ -1,0 +1,112 @@
+{
+  "protocolVersion": "dodecagon/1",
+  "walls": {
+    "north": [
+      "reuben",
+      "judah",
+      "levi"
+    ],
+    "east": [
+      "joseph",
+      "benjamin",
+      "dan"
+    ],
+    "south": [
+      "simeon",
+      "issachar",
+      "zebulun"
+    ],
+    "west": [
+      "gad",
+      "asher",
+      "naphtali"
+    ]
+  },
+  "gates": [
+    {
+      "id": "reuben",
+      "domain": "foundation",
+      "wall": "north",
+      "status": "phase1-active"
+    },
+    {
+      "id": "judah",
+      "domain": "governance",
+      "wall": "north",
+      "status": "phase1-active"
+    },
+    {
+      "id": "levi",
+      "domain": "stewardship",
+      "wall": "north",
+      "status": "reserved"
+    },
+    {
+      "id": "joseph",
+      "domain": "capital",
+      "wall": "east",
+      "status": "phase1-active"
+    },
+    {
+      "id": "benjamin",
+      "domain": "execution",
+      "wall": "east",
+      "status": "reserved"
+    },
+    {
+      "id": "dan",
+      "domain": "judgment",
+      "wall": "east",
+      "status": "reserved"
+    },
+    {
+      "id": "simeon",
+      "domain": "repair",
+      "wall": "south",
+      "status": "reserved"
+    },
+    {
+      "id": "issachar",
+      "domain": "intelligence",
+      "wall": "south",
+      "status": "reserved"
+    },
+    {
+      "id": "zebulun",
+      "domain": "commerce",
+      "wall": "south",
+      "status": "reserved"
+    },
+    {
+      "id": "gad",
+      "domain": "defense",
+      "wall": "west",
+      "status": "reserved"
+    },
+    {
+      "id": "asher",
+      "domain": "provision",
+      "wall": "west",
+      "status": "reserved"
+    },
+    {
+      "id": "naphtali",
+      "domain": "communications",
+      "wall": "west",
+      "status": "reserved"
+    }
+  ],
+  "courtyardEngines": [
+    {
+      "id": "shiloh",
+      "sovereign": false,
+      "allowedIntents": [
+        "read",
+        "propose"
+      ],
+      "forbiddenIntents": [
+        "execute"
+      ]
+    }
+  ]
+}

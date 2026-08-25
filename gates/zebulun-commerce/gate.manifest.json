@@ -1,0 +1,8 @@
+{
+  "protocol": "dodecagon/1",
+  "gateId": "zebulun",
+  "domain": "commerce",
+  "wall": "south",
+  "status": "reserved",
+  "sovereign": true
+}
